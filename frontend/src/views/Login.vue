@@ -3,14 +3,14 @@
     <el-card class="login-card">
       <template #header>
         <div class="card-header">
-          <h2>字节大模型平台</h2>
-          <p>统一访问 · 安全管控 · 高效协作</p>
+          <h2>管理员登录</h2>
+          <p>请输入管理员账号和密码</p>
         </div>
       </template>
       
       <el-form :model="form" :rules="rules" ref="loginFormRef" label-width="80px">
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="请输入用户名" prefix-icon="User" />
+          <el-input v-model="form.username" placeholder="请输入管理员用户名" prefix-icon="User" />
         </el-form-item>
         
         <el-form-item label="密码" prop="password">
@@ -21,6 +21,16 @@
         <el-form-item>
           <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">
             登录
+          </el-button>
+        </el-form-item>
+        
+        <el-divider>
+          <span style="color: #909399; font-size: 12px">或者</span>
+        </el-divider>
+        
+        <el-form-item>
+          <el-button @click="goToHome" style="width: 100%">
+            以默认用户身份访问
           </el-button>
         </el-form-item>
       </el-form>
@@ -71,6 +81,26 @@ const handleLogin = async () => {
       }
     }
   })
+}
+
+const goToHome = async () => {
+  // 如果已经自动登录，直接跳转
+  if (authStore.isAuthenticated && authStore.isAutoLogin) {
+    router.push('/')
+    return
+  }
+  
+  // 否则执行自动登录
+  loading.value = true
+  const result = await authStore.autoLogin()
+  loading.value = false
+  
+  if (result.success) {
+    ElMessage.success('已以默认用户身份登录')
+    router.push('/')
+  } else {
+    ElMessage.error(result.message)
+  }
 }
 </script>
 

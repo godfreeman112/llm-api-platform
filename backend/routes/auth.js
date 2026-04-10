@@ -58,6 +58,54 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// 默认用户自动登录
+router.post('/auto-login', async (req, res) => {
+  try {
+    // 查找或创建Default用户
+    let user = await get('SELECT * FROM users WHERE username = ?', ['Default']);
+    
+    if (!user) {
+      // 创建Default用户
+      const hashedPassword = await bcrypt.hash('default_auto_login_' + Date.now(), 10);
+      const result = await run(
+        'INSERT INTO users (username, email, password, role, quota, status) VALUES (?, ?, ?, ?, ?, ?)',
+        ['Default', 'default@local.local', hashedPassword, 'user', 1000000, 'active']
+      );
+      
+      user = await get('SELECT * FROM users WHERE id = ?', [result.lastID]);
+      console.log('✓ 创建Default用户');
+    }
+
+    if (user.status !== 'active') {
+      return res.status(403).json({ message: 'Default账户已被禁用' });
+    }
+
+    // 更新最后登录时间
+    await run('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
+
+    // 生成token
+    const token = generateToken(user);
+
+    // 返回用户信息（不包含密码）
+    const userInfo = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      quota: user.quota,
+      usedQuota: user.used_quota
+    };
+
+    res.json({
+      token,
+      user: userInfo
+    });
+  } catch (error) {
+    console.error('自动登录错误:', error);
+    res.status(500).json({ message: '服务器内部错误' });
+  }
+});
+
 // 获取当前用户信息
 router.get('/me', authenticateToken, async (req, res) => {
   try {

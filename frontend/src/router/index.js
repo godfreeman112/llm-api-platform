@@ -57,12 +57,22 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   
+  // 如果需要认证但未登录
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    // 如果是访问首页，尝试自动登录
+    if (to.path === '/') {
+      const result = await authStore.autoLogin()
+      if (result.success) {
+        next()
+        return
+      }
+    }
     next('/login')
   } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    // 需要管理员权限但不是管理员
     next('/')
   } else {
     next()

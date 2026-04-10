@@ -30,6 +30,12 @@ api.interceptors.response.use(
 )
 
 // API相关接口
+export const authApi = {
+  login: (data) => api.post('/auth/login', data),
+  autoLogin: () => api.post('/auth/auto-login'),
+  me: () => api.get('/auth/me'),
+  changePassword: (data) => api.post('/auth/change-password', data)
+}
 export const chatApi = {
   sendMessage: (data) => api.post('/chat/send', data),
   getHistory: () => api.get('/chat/history'),
