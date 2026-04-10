@@ -42,7 +42,7 @@
       <el-container>
         <el-header>
           <div class="header-content">
-            <h2>欢迎使用大模型API平台</h2>
+            <h2>欢迎使用字节大模型平台</h2>
             <div class="user-info">
               <span>{{ authStore.user?.username }}</span>
               <el-tag size="small" :type="authStore.isAdmin ? 'danger' : 'success'">
@@ -133,7 +133,6 @@
             </template>
             <el-table :data="models" stripe>
               <el-table-column prop="name" label="模型名称" />
-              <el-table-column prop="provider" label="提供商" />
               <el-table-column prop="status" label="状态">
                 <template #default="{ row }">
                   <el-tag :type="row.status === 'active' ? 'success' : 'info'">

@@ -13,7 +13,6 @@
 
       <el-table :data="models" stripe v-loading="loading">
         <el-table-column prop="name" label="模型名称" width="150" />
-        <el-table-column prop="provider" label="提供商" width="120" />
         <el-table-column prop="apiEndpoint" label="API端点" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -36,14 +35,6 @@
       <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="模型名称" prop="name">
           <el-input v-model="form.name" placeholder="例如: GPT-4" />
-        </el-form-item>
-        
-        <el-form-item label="提供商" prop="provider">
-          <el-select v-model="form.provider" placeholder="选择提供商" style="width: 100%">
-            <el-option label="阿里" value="aliyun" />
-            <el-option label="字节" value="volcengine" />
-            <el-option label="其它" value="custom" />
-          </el-select>
         </el-form-item>
         
         <el-form-item label="模型类型" prop="modelType">
@@ -122,7 +113,7 @@ const models = ref([])
 const form = reactive({
   id: null,
   name: '',
-  provider: '',
+  provider: 'volcengine',  // 固定为字节
   modelType: 'chat',
   apiEndpoint: '',
   apiKey: '',
@@ -137,7 +128,6 @@ const form = reactive({
 
 const rules = {
   name: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
-  provider: [{ required: true, message: '请选择提供商', trigger: 'change' }],
   apiEndpoint: [{ required: true, message: '请输入API端点', trigger: 'blur' }],
   apiKey: [{ required: true, message: '请输入API密钥', trigger: 'blur' }]
 }
@@ -171,7 +161,7 @@ const resetForm = () => {
   Object.assign(form, {
     id: null,
     name: '',
-    provider: '',
+    provider: 'volcengine',  // 固定为字节
     modelType: 'chat',
     apiEndpoint: '',
     apiKey: '',
