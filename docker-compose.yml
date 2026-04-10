@@ -7,10 +7,10 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: llm-api-platform
     ports:
-      - "8070:8080"
+      - "8070:8070"
     environment:
       - NODE_ENV=production
-      - PORT=8080
+      - PORT=8070
       - JWT_SECRET=${JWT_SECRET:-change-this-to-a-random-string-in-production}
       - DB_PATH=/app/data/llm-platform.db
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123456}

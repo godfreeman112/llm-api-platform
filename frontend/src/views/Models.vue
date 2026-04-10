@@ -40,13 +40,9 @@
         
         <el-form-item label="提供商" prop="provider">
           <el-select v-model="form.provider" placeholder="选择提供商" style="width: 100%">
-            <el-option label="OpenAI" value="openai" />
-            <el-option label="Anthropic" value="anthropic" />
-            <el-option label="百度文心" value="baidu" />
-            <el-option label="阿里通义" value="aliyun" />
-            <el-option label="腾讯混元" value="tencent" />
-            <el-option label="火山引擎" value="volcengine" />
-            <el-option label="自定义" value="custom" />
+            <el-option label="阿里" value="aliyun" />
+            <el-option label="字节" value="volcengine" />
+            <el-option label="其它" value="custom" />
           </el-select>
         </el-form-item>
         
@@ -166,7 +162,8 @@ const showAddDialog = () => {
 
 const showEditDialog = (row) => {
   dialogTitle.value = '编辑模型'
-  Object.assign(form, row)
+  // 深拷贝，避免引用同一对象
+  Object.assign(form, JSON.parse(JSON.stringify(row)))
   dialogVisible.value = true
 }
 
@@ -206,7 +203,8 @@ const submitForm = async () => {
           ElMessage.success('添加成功')
         }
         dialogVisible.value = false
-        loadModels()
+        // 重新加载数据，确保数据一致性
+        await loadModels()
       } catch (error) {
         ElMessage.error(error.response?.data?.message || '操作失败')
       } finally {

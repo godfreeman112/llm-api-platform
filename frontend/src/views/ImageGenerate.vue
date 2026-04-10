@@ -4,7 +4,6 @@
       <template #header>
         <div class="card-header">
           <span>图像生成</span>
-          <el-tag type="info">火山引擎即梦 4.0</el-tag>
         </div>
       </template>
 

@@ -42,7 +42,7 @@
       <el-container>
         <el-header>
           <div class="header-content">
-            <h2>欢迎使用企业大模型API平台</h2>
+            <h2>欢迎使用大模型API平台</h2>
             <div class="user-info">
               <span>{{ authStore.user?.username }}</span>
               <el-tag size="small" :type="authStore.isAdmin ? 'danger' : 'success'">

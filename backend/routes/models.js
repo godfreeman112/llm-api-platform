@@ -72,14 +72,14 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         provider || model.provider,
         modelType || model.model_type,
         apiEndpoint || model.api_endpoint,
-        apiKey || model.api_key,
+        apiKey !== undefined ? apiKey : model.api_key,  // 只有明确提供时才更新
         temperature !== undefined ? temperature : model.temperature,
-        maxTokens || model.max_tokens,
-        imageSize || model.image_size,
-        outputFormat || model.output_format,
-        responseFormat || model.response_format,
+        maxTokens !== undefined ? maxTokens : model.max_tokens,
+        imageSize !== undefined ? imageSize : model.image_size,
+        outputFormat !== undefined ? outputFormat : model.output_format,
+        responseFormat !== undefined ? responseFormat : model.response_format,
         description !== undefined ? description : model.description,
-        status || model.status,
+        status !== undefined ? status : model.status,
         id
       ]
     );

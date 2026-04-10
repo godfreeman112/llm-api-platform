@@ -3,7 +3,7 @@
     <el-card class="login-card">
       <template #header>
         <div class="card-header">
-          <h2>企业大模型API平台</h2>
+          <h2>大模型API平台</h2>
           <p>统一访问 · 安全管控 · 高效协作</p>
         </div>
       </template>
