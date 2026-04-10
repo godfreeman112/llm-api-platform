@@ -149,19 +149,12 @@
               </div>
             </template>
             <el-table :data="models" stripe>
-              <el-table-column prop="name" label="模型名称" />
+              <el-table-column prop="name" label="模型ID" />
               <el-table-column prop="status" label="状态">
                 <template #default="{ row }">
                   <el-tag :type="row.status === 'active' ? 'success' : 'info'">
                     {{ row.status === 'active' ? '可用' : '禁用' }}
                   </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作">
-                <template #default="{ row }">
-                  <el-button size="small" type="primary" @click="selectModel(row)">
-                    使用此模型
-                  </el-button>
                 </template>
               </el-table-column>
             </el-table>

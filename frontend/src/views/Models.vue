@@ -12,7 +12,7 @@
       </template>
 
       <el-table :data="models" stripe v-loading="loading">
-        <el-table-column prop="name" label="模型名称" width="150" />
+        <el-table-column prop="name" label="模型ID" width="150" />
         <el-table-column prop="apiEndpoint" label="API端点" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
