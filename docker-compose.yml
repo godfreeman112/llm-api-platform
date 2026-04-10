@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  llm-platform:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: llm-api-platform
+    ports:
+      - "8070:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - JWT_SECRET=${JWT_SECRET:-change-this-to-a-random-string-in-production}
+      - DB_PATH=/app/data/llm-platform.db
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123456}
+    volumes:
+      - llm-data:/app/data
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+volumes:
+  llm-data:
+    driver: local
+
+networks:
+  llm-network:
+    driver: bridge
