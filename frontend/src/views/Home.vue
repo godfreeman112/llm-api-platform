@@ -44,7 +44,7 @@
             <el-icon><DataLine /></el-icon>
             <span>使用监控</span>
           </el-menu-item>
-          <el-menu-item index="/profile">
+          <el-menu-item v-if="authStore.isAdmin" index="/profile">
             <el-icon><Setting /></el-icon>
             <span>个人中心</span>
           </el-menu-item>
@@ -67,78 +67,82 @@
         </el-header>
 
         <el-main>
-          <el-row :gutter="20">
-            <el-col :span="6">
-              <el-card class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon" style="background: #409eff">
-                    <el-icon size="30"><ChatDotRound /></el-icon>
+          <!-- 仅管理员显示统计信息 -->
+          <template v-if="authStore.isAdmin">
+            <el-row :gutter="20">
+              <el-col :span="6">
+                <el-card class="stat-card">
+                  <div class="stat-content">
+                    <div class="stat-icon" style="background: #409eff">
+                      <el-icon size="30"><ChatDotRound /></el-icon>
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-value">{{ stats.todayCalls || 0 }}</div>
+                      <div class="stat-label">今日调用</div>
+                    </div>
                   </div>
-                  <div class="stat-info">
-                    <div class="stat-value">{{ stats.todayCalls || 0 }}</div>
-                    <div class="stat-label">今日调用</div>
+                </el-card>
+              </el-col>
+              
+              <el-col :span="6">
+                <el-card class="stat-card">
+                  <div class="stat-content">
+                    <div class="stat-icon" style="background: #67c23a">
+                      <el-icon size="30"><Document /></el-icon>
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-value">{{ stats.todayTokens || 0 }}</div>
+                      <div class="stat-label">今日Token</div>
+                    </div>
                   </div>
-                </div>
-              </el-card>
-            </el-col>
-            
-            <el-col :span="6">
-              <el-card class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon" style="background: #67c23a">
-                    <el-icon size="30"><Document /></el-icon>
+                </el-card>
+              </el-col>
+              
+              <el-col :span="6">
+                <el-card class="stat-card">
+                  <div class="stat-content">
+                    <div class="stat-icon" style="background: #e6a23c">
+                      <el-icon size="30"><Coin /></el-icon>
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-value">¥{{ stats.monthCost || 0 }}</div>
+                      <div class="stat-label">本月费用</div>
+                    </div>
                   </div>
-                  <div class="stat-info">
-                    <div class="stat-value">{{ stats.todayTokens || 0 }}</div>
-                    <div class="stat-label">今日Token</div>
+                </el-card>
+              </el-col>
+              
+              <el-col :span="6">
+                <el-card class="stat-card">
+                  <div class="stat-content">
+                    <div class="stat-icon" style="background: #f56c6c">
+                      <el-icon size="30"><TrendCharts /></el-icon>
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-value">{{ stats.remainQuota || '∞' }}</div>
+                      <div class="stat-label">剩余配额</div>
+                    </div>
                   </div>
-                </div>
-              </el-card>
-            </el-col>
-            
-            <el-col :span="6">
-              <el-card class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon" style="background: #e6a23c">
-                    <el-icon size="30"><Coin /></el-icon>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-value">¥{{ stats.monthCost || 0 }}</div>
-                    <div class="stat-label">本月费用</div>
-                  </div>
-                </div>
-              </el-card>
-            </el-col>
-            
-            <el-col :span="6">
-              <el-card class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon" style="background: #f56c6c">
-                    <el-icon size="30"><TrendCharts /></el-icon>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-value">{{ stats.remainQuota || '∞' }}</div>
-                    <div class="stat-label">剩余配额</div>
-                  </div>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
+                </el-card>
+              </el-col>
+            </el-row>
 
-          <el-card style="margin-top: 20px">
-            <template #header>
-              <div class="card-header">
-                <span>快速开始</span>
-              </div>
-            </template>
-            <el-steps :active="1" align-center>
-              <el-step title="选择模型" description="在模型管理中配置API密钥" />
-              <el-step title="开始对话" description="在对话测试中体验模型能力" />
-              <el-step title="查看统计" description="在使用监控中查看使用情况" />
-            </el-steps>
-          </el-card>
+            <el-card style="margin-top: 20px">
+              <template #header>
+                <div class="card-header">
+                  <span>快速开始</span>
+                </div>
+              </template>
+              <el-steps :active="1" align-center>
+                <el-step title="选择模型" description="在模型管理中配置API密钥" />
+                <el-step title="开始对话" description="在对话测试中体验模型能力" />
+                <el-step title="查看统计" description="在使用监控中查看使用情况" />
+              </el-steps>
+            </el-card>
+          </template>
 
-          <el-card style="margin-top: 20px">
+          <!-- 所有用户都显示可用模型 -->
+          <el-card :style="{ marginTop: authStore.isAdmin ? '20px' : '0' }">
             <template #header>
               <div class="card-header">
                 <span>可用模型</span>
