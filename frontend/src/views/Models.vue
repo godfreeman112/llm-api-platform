@@ -41,6 +41,7 @@
           <el-radio-group v-model="form.modelType">
             <el-radio label="chat">对话模型</el-radio>
             <el-radio label="image">图像生成模型</el-radio>
+            <el-radio label="video">视频生成模型</el-radio>
           </el-radio-group>
         </el-form-item>
         
@@ -84,6 +85,29 @@
           </el-radio-group>
         </el-form-item>
         
+        <!-- 视频模型专用参数 -->
+        <el-form-item label="视频时长" prop="videoDuration" v-if="form.modelType === 'video'">
+          <el-select v-model="form.videoDuration" placeholder="选择视频时长" style="width: 100%">
+            <el-option label="5秒" value="5s" />
+            <el-option label="10秒" value="10s" />
+            <el-option label="15秒" value="15s" />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="视频分辨率" prop="videoResolution" v-if="form.modelType === 'video'">
+          <el-select v-model="form.videoResolution" placeholder="选择视频分辨率" style="width: 100%">
+            <el-option label="720p" value="720p" />
+            <el-option label="1080p" value="1080p" />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="输出格式" prop="outputFormat" v-if="form.modelType === 'video'">
+          <el-select v-model="form.outputFormat" placeholder="选择输出格式" style="width: 100%">
+            <el-option label="MP4" value="mp4" />
+            <el-option label="WEBM" value="webm" />
+          </el-select>
+        </el-form-item>
+        
         <el-form-item label="描述">
           <el-input v-model="form.description" type="textarea" :rows="3" 
                    placeholder="模型描述信息" />
@@ -122,6 +146,8 @@ const form = reactive({
   imageSize: '1024x1024',
   outputFormat: 'png',
   responseFormat: 'url',
+  videoDuration: '5s',
+  videoResolution: '1080p',
   description: '',
   status: 'active'
 })
@@ -170,6 +196,8 @@ const resetForm = () => {
     imageSize: '1024x1024',
     outputFormat: 'png',
     responseFormat: 'url',
+    videoDuration: '5s',
+    videoResolution: '1080p',
     description: '',
     status: 'active'
   })

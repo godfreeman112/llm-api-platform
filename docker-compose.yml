@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: llm-api-platform
+    
     ports:
       - "8070:8070"
     environment:

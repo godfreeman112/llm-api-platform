@@ -8,10 +8,15 @@ const router = express.Router();
 // 生成图像
 router.post('/generate', authenticateToken, async (req, res) => {
   try {
-    const { model: modelId, prompt, image = null } = req.body;
+    const { model: modelId, prompt, images = [] } = req.body;
 
     if (!modelId || !prompt) {
       return res.status(400).json({ message: '模型ID和提示词不能为空' });
+    }
+
+    // 验证图片数量限制
+    if (images.length > 9) {
+      return res.status(400).json({ message: '参考图片最多9张' });
     }
 
     // 获取模型信息
@@ -33,24 +38,28 @@ router.post('/generate', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: '您的配额已用完，请联系管理员' });
     }
 
-    // 构建请求参数（火山引擎即梦API格式）
+    // 构建请求参数 - Seedream API 格式
     const requestBody = {
       model: model.name,
       prompt: prompt
     };
 
-    // 如果有参考图片，添加到请求中
-    if (image) {
-      requestBody.image = image;
+    // 添加参考图片（Seedream 5.0-lite/4.5/4.0 支持最多14张参考图）
+    if (images && images.length > 0) {
+      // 如果有图片，使用 image 参数（支持数组格式）
+      requestBody.image = images.length === 1 ? images[0] : images;
+      console.log(`添加了 ${images.length} 张参考图片`);
     }
 
-    // 添加可选参数（即梦 API 不支持 output_format）
+    // 添加可选参数
     if (model.response_format) {
       requestBody.response_format = model.response_format;
     }
     if (model.image_size) {
       requestBody.size = model.image_size;
     }
+
+    console.log('提交图片生成请求，包含', images.length, '张参考图片');
 
     // 调用火山引擎API
     const startTime = Date.now();
@@ -80,7 +89,7 @@ router.post('/generate', authenticateToken, async (req, res) => {
         [
           req.user.id,
           modelId,
-          JSON.stringify({ prompt, image: image ? '[BASE64_OR_URL]' : null }),
+          JSON.stringify({ prompt, images_count: images.length }),
           JSON.stringify(apiError.response?.data || { message: apiError.message }),
           apiError.response?.data?.error?.message || apiError.message
         ]
@@ -154,7 +163,7 @@ router.post('/generate', authenticateToken, async (req, res) => {
         0,
         tokens,
         cost,
-        JSON.stringify({ prompt, image: image ? '[BASE64_OR_URL]' : null }),
+        JSON.stringify({ prompt, images_count: images.length }),
         JSON.stringify(responseData)
       ]
     );

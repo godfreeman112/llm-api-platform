@@ -36,25 +36,54 @@ router.post('/send', authenticateToken, async (req, res) => {
     
     messages.push({ role: 'user', content: message });
 
-    // 调用大模型API
+    // 调用大模型API - 根据模型类型使用不同的请求格式
     const startTime = Date.now();
     let responseData;
     
     try {
-      const apiResponse = await axios.post(
-        model.api_endpoint,
-        {
+      let requestBody;
+      
+      if (model.model_type === 'video') {
+        // 视频生成模型使用火山方舟 content 数组格式
+        requestBody = {
+          model: model.name,
+          content: [
+            {
+              type: 'text',
+              text: message
+            }
+          ]
+        };
+      } else if (model.model_type === 'image') {
+        // 图像生成模型使用 content 格式
+        requestBody = {
+          model: model.name,
+          content: [
+            {
+              type: 'text',
+              text: message
+            }
+          ]
+        };
+      } else {
+        // 对话模型使用标准 messages 格式
+        requestBody = {
           model: model.name,
           messages: messages,
           temperature: model.temperature,
           max_tokens: model.max_tokens
-        },
+        };
+      }
+      
+      const apiResponse = await axios.post(
+        model.api_endpoint,
+        requestBody,
         {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${model.api_key}`
           },
-          timeout: 60000
+          timeout: model.model_type === 'video' ? 60000 : 30000
         }
       );
 
@@ -69,7 +98,7 @@ router.post('/send', authenticateToken, async (req, res) => {
         [
           req.user.id,
           modelId,
-          JSON.stringify({ message }),
+          JSON.stringify({ message, modelType: model.model_type }),
           JSON.stringify(apiError.response?.data || { message: apiError.message }),
           apiError.response?.data?.error?.message || apiError.message
         ]
@@ -81,11 +110,34 @@ router.post('/send', authenticateToken, async (req, res) => {
       });
     }
 
-    // 提取响应内容
-    const assistantMessage = responseData.choices?.[0]?.message?.content || '';
-    const promptTokens = responseData.usage?.prompt_tokens || 0;
-    const completionTokens = responseData.usage?.completion_tokens || 0;
-    const totalTokens = responseData.usage?.total_tokens || 0;
+    // 根据模型类型提取响应内容
+    let assistantMessage = '';
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let totalTokens = 0;
+
+    if (model.model_type === 'video' || model.model_type === 'image') {
+      // 视频/图像模型返回任务信息
+      // 火山方舟会返回 task_id 或其他任务标识
+      if (responseData.id) {
+        assistantMessage = `✅ 任务已创建成功！\n\n📋 任务ID: ${responseData.id}\n📊 状态: ${responseData.status || 'processing'}\n\n⏳ 视频/图像正在生成中，请稍后查看结果。\n\n💡 提示：视频生成通常需要30秒到3分钟。`;
+      } else if (responseData.data?.id) {
+        assistantMessage = `✅ 任务已创建成功！\n\n📋 任务ID: ${responseData.data.id}\n📊 状态: ${responseData.data.status || 'processing'}`;
+      } else {
+        assistantMessage = `✅ API调用成功！\n\n返回数据：\n${JSON.stringify(responseData, null, 2)}`;
+      }
+      
+      // 视频/图像模型可能没有token使用量
+      promptTokens = 0;
+      completionTokens = 0;
+      totalTokens = 0;
+    } else {
+      // 对话模型的标准响应
+      assistantMessage = responseData.choices?.[0]?.message?.content || '';
+      promptTokens = responseData.usage?.prompt_tokens || 0;
+      completionTokens = responseData.usage?.completion_tokens || 0;
+      totalTokens = responseData.usage?.total_tokens || 0;
+    }
 
     // 计算费用（简化计算，实际应根据不同模型的定价）
     const cost = (totalTokens / 1000) * 0.01; // 假设每1000 token 0.01元

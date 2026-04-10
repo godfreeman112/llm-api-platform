@@ -9,7 +9,7 @@ const router = express.Router();
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const models = await query(
-      'SELECT id, name, provider, model_type as modelType, api_endpoint as apiEndpoint, temperature, max_tokens as maxTokens, image_size as imageSize, output_format as outputFormat, response_format as responseFormat, description, status, created_at as createdAt FROM models ORDER BY created_at DESC'
+      'SELECT id, name, provider, model_type as modelType, api_endpoint as apiEndpoint, temperature, max_tokens as maxTokens, image_size as imageSize, output_format as outputFormat, response_format as responseFormat, video_duration as videoDuration, video_resolution as videoResolution, description, status, created_at as createdAt FROM models ORDER BY created_at DESC'
     );
 
     res.json(models);
@@ -22,18 +22,19 @@ router.get('/', authenticateToken, async (req, res) => {
 // 创建模型（仅管理员）
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { name, provider, modelType, apiEndpoint, apiKey, temperature, maxTokens, imageSize, outputFormat, responseFormat, description, status } = req.body;
+    const { name, provider, modelType, apiEndpoint, apiKey, temperature, maxTokens, imageSize, outputFormat, responseFormat, videoDuration, videoResolution, description, status } = req.body;
 
     if (!name || !provider || !apiEndpoint || !apiKey) {
       return res.status(400).json({ message: '名称、提供商、API端点和API密钥不能为空' });
     }
 
     const result = await run(
-      `INSERT INTO models (name, provider, model_type, api_endpoint, api_key, temperature, max_tokens, image_size, output_format, response_format, description, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO models (name, provider, model_type, api_endpoint, api_key, temperature, max_tokens, image_size, output_format, response_format, video_duration, video_resolution, description, status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, provider, modelType || 'chat', apiEndpoint, apiKey, 
        temperature || 0.7, maxTokens || 4096, imageSize || '1024x1024', 
        outputFormat || 'png', responseFormat || 'url',
+       videoDuration || '5s', videoResolution || '1080p',
        description, status || 'active']
     );
 
@@ -54,7 +55,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, provider, modelType, apiEndpoint, apiKey, temperature, maxTokens, imageSize, outputFormat, responseFormat, description, status } = req.body;
+    const { name, provider, modelType, apiEndpoint, apiKey, temperature, maxTokens, imageSize, outputFormat, responseFormat, videoDuration, videoResolution, description, status } = req.body;
 
     // 检查模型是否存在
     const model = await get('SELECT * FROM models WHERE id = ?', [id]);
@@ -65,7 +66,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     await run(
       `UPDATE models 
-       SET name = ?, provider = ?, model_type = ?, api_endpoint = ?, api_key = ?, temperature = ?, max_tokens = ?, image_size = ?, output_format = ?, response_format = ?, description = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
+       SET name = ?, provider = ?, model_type = ?, api_endpoint = ?, api_key = ?, temperature = ?, max_tokens = ?, image_size = ?, output_format = ?, response_format = ?, video_duration = ?, video_resolution = ?, description = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
       [
         name || model.name,
@@ -78,6 +79,8 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         imageSize !== undefined ? imageSize : model.image_size,
         outputFormat !== undefined ? outputFormat : model.output_format,
         responseFormat !== undefined ? responseFormat : model.response_format,
+        videoDuration !== undefined ? videoDuration : model.video_duration,
+        videoResolution !== undefined ? videoResolution : model.video_resolution,
         description !== undefined ? description : model.description,
         status !== undefined ? status : model.status,
         id
@@ -131,6 +134,19 @@ router.post('/:id/test', authenticateToken, requireAdmin, async (req, res) => {
         model: model.name,
         prompt: '一只可爱的小猫'
       };
+    } else if (model.model_type === 'video') {
+      // 视频生成模型测试 - 火山方舟格式
+      // 注意：这里只做连接测试，不是真正生成视频
+      // 火山方舟视频API使用 content 数组格式
+      requestBody = {
+        model: model.name,
+        content: [
+          {
+            type: 'text',
+            text: '一只小猫'
+          }
+        ]
+      };
     } else {
       // 对话模型测试
       requestBody = {
@@ -149,7 +165,7 @@ router.post('/:id/test', authenticateToken, requireAdmin, async (req, res) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${model.api_key}`
         },
-        timeout: model.model_type === 'image' ? 30000 : 10000 // 图像生成需要更长时间
+        timeout: model.model_type === 'image' ? 30000 : (model.model_type === 'video' ? 60000 : 10000) // 图像生成需要30秒，视频生成需要60秒
       }
     );
 

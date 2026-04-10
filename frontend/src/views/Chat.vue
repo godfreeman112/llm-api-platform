@@ -37,7 +37,106 @@
                 <el-icon v-else><Cpu /></el-icon>
               </div>
               <div class="message-content">
-                <div class="message-text">{{ msg.content }}</div>
+                <div class="message-text" v-html="formatMessageContent(msg.content)" />
+                
+                <!-- 视频生成任务展示区 -->
+                <div v-if="msg.taskId" class="task-result">
+                  <el-divider content-position="left">
+                    <el-icon><VideoCamera /></el-icon>
+                    视频生成任务
+                  </el-divider>
+                  
+                  <!-- 任务信息卡片 -->
+                  <div class="task-info-card">
+                    <div class="task-header">
+                      <el-tag :type="getTaskStatusType(msg)" size="small">
+                        {{ getTaskStatusLabel(msg) }}
+                      </el-tag>
+                      <span class="task-id">ID: {{ msg.taskId }}</span>
+                    </div>
+                    
+                    <!-- 未开始查询 -->
+                    <div v-if="!msg.videoUrl && !msg.isPolling && !msg.hasQueried" class="task-actions">
+                      <el-button 
+                        type="primary" 
+                        size="default"
+                        @click="startPolling(index, msg.taskId)"
+                      >
+                        <el-icon><Refresh /></el-icon>
+                        查询生成结果
+                      </el-button>
+                      <el-text size="small" type="info">
+                        点击按钮开始查询视频生成状态
+                      </el-text>
+                    </div>
+                    
+                    <!-- 正在轮询 -->
+                    <div v-if="msg.isPolling" class="polling-status">
+                      <el-progress 
+                        :percentage="getPollingProgress(msg)" 
+                        :stroke-width="8"
+                        :status="msg.pollingError ? 'exception' : undefined"
+                      />
+                      <div class="polling-info">
+                        <el-icon class="is-loading"><Loading /></el-icon>
+                        <span>{{ msg.pollingText || '正在获取结果...' }}</span>
+                      </div>
+                      <el-button 
+                        size="small" 
+                        @click="stopPolling(index)"
+                        type="danger"
+                        plain
+                      >
+                        停止查询
+                      </el-button>
+                    </div>
+                    
+                    <!-- 视频生成成功 -->
+                    <div v-if="msg.videoUrl" class="video-result-container">
+                      <div class="video-player-wrapper">
+                        <video 
+                          :src="msg.videoUrl" 
+                          controls 
+                          class="generated-video" 
+                          preload="metadata"
+                        />
+                      </div>
+                      <div class="video-actions">
+                        <el-button type="success" size="default" @click="downloadVideo(msg.videoUrl, index)">
+                          <el-icon><Download /></el-icon>
+                          下载视频
+                        </el-button>
+                        <el-button size="default" @click="copyVideoUrl(msg.videoUrl)">
+                          <el-icon><Link /></el-icon>
+                          复制链接
+                        </el-button>
+                        <el-button size="default" @click="openInNewTab(msg.videoUrl)">
+                          <el-icon><View /></el-icon>
+                          新窗口打开
+                        </el-button>
+                      </div>
+                    </div>
+                    
+                    <!-- 任务失败 -->
+                    <div v-if="msg.pollingError" class="task-error">
+                      <el-alert 
+                        :title="'生成失败: ' + msg.pollingError" 
+                        type="error" 
+                        :closable="false"
+                        show-icon
+                      />
+                      <el-button 
+                        size="small" 
+                        type="warning"
+                        @click="retryQuery(index, msg.taskId)"
+                        style="margin-top: 10px;"
+                      >
+                        重试查询
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+                
                 <div class="message-time">{{ formatTime(msg.time) }}</div>
               </div>
             </div>
@@ -71,7 +170,8 @@
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { chatApi, modelApi } from '../api'
+import { chatApi, modelApi, videoApi } from '../api'
+import { Plus, User, Cpu, Loading, VideoCamera, Refresh, Download, Link, View } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const messagesRef = ref(null)
@@ -146,9 +246,29 @@ const sendMessage = async () => {
       history: messages.value.slice(0, -1)
     })
     
+    const selectedModelObj = models.value.find(m => m.id === selectedModel.value)
+    const isVideoModel = selectedModelObj && selectedModelObj.modelType === 'video'
+    
+    // 解析任务ID（如果是视频/图像生成模型）
+    let taskId = null
+    let content = response.content
+    if (isVideoModel && response.content.includes('任务ID:')) {
+      const match = response.content.match(/任务ID: ([\w-]+)/)
+      if (match) {
+        taskId = match[1]
+      }
+    }
+
     const assistantMessage = {
       role: 'assistant',
-      content: response.content,
+      content: content,
+      taskId: taskId,
+      videoUrl: null,
+      isPolling: false,
+      pollingText: '',
+      pollingError: null,
+      hasQueried: false,
+      pollingAttempts: 0,
       time: new Date()
     }
     
@@ -184,6 +304,136 @@ const formatTime = (time) => {
   if (!time) return ''
   const date = new Date(time)
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+}
+
+// 格式化消息内容（处理换行符）
+const formatMessageContent = (content) => {
+  if (!content) return ''
+  return content.replace(/\n/g, '<br>')
+}
+
+// 获取任务状态标签类型
+const getTaskStatusType = (msg) => {
+  if (msg.videoUrl) return 'success'
+  if (msg.pollingError) return 'danger'
+  if (msg.isPolling) return 'warning'
+  return 'info'
+}
+
+// 获取任务状态文本
+const getTaskStatusLabel = (msg) => {
+  if (msg.videoUrl) return '✓ 生成成功'
+  if (msg.pollingError) return '✗ 生成失败'
+  if (msg.isPolling) return '⟳ 生成中'
+  return '⏸ 待查询'
+}
+
+// 获取轮询进度百分比
+const getPollingProgress = (msg) => {
+  if (!msg.pollingAttempts) return 0
+  return Math.round((msg.pollingAttempts / 60) * 100)
+}
+
+// 开始轮询任务状态
+const startPolling = async (msgIndex, taskId) => {
+  const msg = messages.value[msgIndex]
+  msg.isPolling = true
+  msg.pollingText = '正在连接服务器...'
+  msg.pollingError = null
+  msg.hasQueried = true
+  msg.pollingAttempts = 0
+
+  let attempts = 0
+  const maxAttempts = 60 // 最多轮询60次（约5分钟）
+
+  while (attempts < maxAttempts && msg.isPolling) {
+    await new Promise(resolve => setTimeout(resolve, 5000)) // 每5秒查询一次
+    
+    if (!msg.isPolling) break // 用户手动停止
+    
+    attempts++
+    msg.pollingAttempts = attempts
+    msg.pollingText = `查询中... (${attempts}/${maxAttempts})`
+
+    try {
+      const statusResult = await videoApi.checkStatus(taskId)
+      
+      if (statusResult.status === 'succeeded') {
+        msg.videoUrl = statusResult.videoUrl
+        msg.isPolling = false
+        msg.pollingText = ''
+        msg.pollingError = null
+        ElMessage.success('🎉 视频生成成功！')
+        scrollToBottom()
+        break
+      } else if (statusResult.status === 'failed') {
+        msg.isPolling = false
+        msg.pollingError = statusResult.error || '未知错误'
+        msg.pollingText = ''
+        ElMessage.error('❌ 视频生成失败')
+        break
+      } else {
+        // 仍在处理中
+        msg.pollingText = `生成中... ${statusResult.message || '请稍候'} (${attempts}/${maxAttempts})`
+      }
+    } catch (error) {
+      console.error('轮询状态失败:', error)
+      // 不立即中断，继续尝试
+      if (attempts >= 3) {
+        msg.pollingError = '网络连接异常，请检查网络后重试'
+        msg.isPolling = false
+        ElMessage.error('查询失败，请重试')
+        break
+      }
+    }
+  }
+
+  if (!msg.videoUrl && !msg.pollingError && attempts >= maxAttempts) {
+    msg.isPolling = false
+    msg.pollingError = '生成超时（超过5分钟），请稍后手动查询或联系客服'
+    ElMessage.warning('⏰ 视频生成超时')
+  }
+}
+
+// 停止轮询
+const stopPolling = (msgIndex) => {
+  messages.value[msgIndex].isPolling = false
+  messages.value[msgIndex].pollingText = '已停止查询'
+  ElMessage.info('已停止查询，您可以稍后再次点击“查询生成结果”按钮')
+}
+
+// 重试查询
+const retryQuery = (msgIndex, taskId) => {
+  messages.value[msgIndex].pollingError = null
+  startPolling(msgIndex, taskId)
+}
+
+// 下载视频
+const downloadVideo = (videoUrl, msgIndex) => {
+  if (!videoUrl) return
+  const link = document.createElement('a')
+  link.href = videoUrl
+  link.download = `generated_video_${Date.now()}.mp4`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+// 复制视频链接
+const copyVideoUrl = async (videoUrl) => {
+  if (!videoUrl) return
+  try {
+    await navigator.clipboard.writeText(videoUrl)
+    ElMessage.success('✅ 视频链接已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制链接失败')
+  }
+}
+
+// 在新窗口打开视频
+const openInNewTab = (videoUrl) => {
+  if (!videoUrl) return
+  window.open(videoUrl, '_blank')
 }
 
 watch(() => route.query.model, (newModel) => {
@@ -314,6 +564,97 @@ onMounted(() => {
 .message-text {
   line-height: 1.6;
   word-wrap: break-word;
+}
+
+.task-result {
+  margin-top: 15px;
+  padding-top: 10px;
+}
+
+.task-info-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.task-id {
+  font-size: 12px;
+  color: #909399;
+  font-family: 'Courier New', monospace;
+}
+
+.task-actions {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.task-actions .el-button {
+  margin-bottom: 10px;
+}
+
+.task-actions .el-text {
+  display: block;
+  margin-top: 8px;
+}
+
+.polling-status {
+  padding: 15px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e6e6e6;
+}
+
+.polling-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #409eff;
+  font-size: 14px;
+  margin: 12px 0;
+  justify-content: center;
+}
+
+.polling-status .el-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.video-result-container {
+  margin-top: 15px;
+}
+
+.video-player-wrapper {
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.generated-video {
+  width: 100%;
+  max-height: 480px;
+  display: block;
+}
+
+.video-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.task-error {
+  margin-top: 12px;
 }
 
 .message-time {

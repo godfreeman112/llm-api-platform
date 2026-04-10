@@ -73,4 +73,10 @@ export const imageApi = {
   generate: (data) => api.post('/image/generate', data)
 }
 
+// 视频生成相关接口
+export const videoApi = {
+  submitTask: (data) => api.post('/video/submit-task', data),
+  checkStatus: (taskId) => api.get(`/video/task-status/${taskId}`)
+}
+
 export default api

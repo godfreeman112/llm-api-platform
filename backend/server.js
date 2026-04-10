@@ -12,6 +12,7 @@ const modelRoutes = require('./routes/models');
 const userRoutes = require('./routes/users');
 const monitorRoutes = require('./routes/monitor');
 const imageRoutes = require('./routes/image');
+const videoRoutes = require('./routes/video');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -36,6 +37,7 @@ app.use('/api/models', modelRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/monitor', monitorRoutes);
 app.use('/api/image', imageRoutes);
+app.use('/api/video', videoRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

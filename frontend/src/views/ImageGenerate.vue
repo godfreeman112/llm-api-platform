@@ -27,30 +27,51 @@
             placeholder="请输入图像描述提示词，例如：一个充满活力的特写编辑肖像，模特眼神犀利，头戴雕塑感帽子，色彩拼接丰富..."
             maxlength="600"
             show-word-limit
+            @drop.prevent
           />
+          <div class="prompt-tip">
+            💡 提示：请通过下方的"参考图片"区域上传，不要将图片拖拽到此处
+          </div>
+          <!-- 参考文件引用快捷按钮 -->
+          <div v-if="hasReferenceFiles" class="reference-files-bar">
+            <span class="reference-label">📎 已上传参考文件：</span>
+            <div class="reference-buttons">
+              <el-tag 
+                v-for="(ref, index) in referenceFiles" 
+                :key="index"
+                size="small"
+                closable
+                type="success"
+                @close="removeReference(ref)"
+                @click="insertReference(ref)"
+                class="reference-tag"
+              >
+                {{ ref.icon }} {{ ref.name }}
+              </el-tag>
+            </div>
+            <div class="reference-hint">点击标签插入引用，或拖拽到提示词框中</div>
+          </div>
         </el-form-item>
 
-        <el-form-item label="参考图片" v-if="form.modelConfig?.supportImageInput">
+        <!-- 参考图片（默认显示） -->
+        <el-form-item label="参考图片" v-if="form.modelConfig?.supportImageInput !== false">
           <el-upload
+            v-model:file-list="imageFileList"
             class="upload-demo"
             :auto-upload="false"
-            :on-change="handleFileChange"
-            :limit="1"
+            :on-change="handleImageChange"
+            :on-remove="handleImageRemove"
+            :limit="9"
             accept="image/*"
+            list-type="picture-card"
+            multiple
+            :on-preview="handlePictureCardPreview"
           >
-            <template #trigger>
-              <el-button type="primary">选择图片</el-button>
-            </template>
+            <el-icon><Plus /></el-icon>
             <template #tip>
-              <div class="el-upload__tip">支持 jpg/png/webp，可选：上传参考图进行图生图</div>
+              <div class="el-upload__tip">支持 jpg/png/webp，最多9张，可选：上传参考图进行图生图</div>
             </template>
           </el-upload>
-          <div v-if="previewImage" class="preview-container">
-            <img :src="previewImage" alt="预览图" class="preview-image" />
-            <el-button size="small" type="danger" @click="clearImage" class="clear-btn">
-              移除图片
-            </el-button>
-          </div>
         </el-form-item>
 
         <el-form-item>
@@ -136,7 +157,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Picture } from '@element-plus/icons-vue'
+import { Picture, Plus } from '@element-plus/icons-vue'
 import { modelApi, imageApi } from '../api'
 
 const route = useRoute()
@@ -146,20 +167,83 @@ const generatedImage = ref(null)
 const usageInfo = ref({})
 const generationTime = ref(0)
 const history = ref([])
-const previewImage = ref(null)
-const imageFile = ref(null)
 const imageModels = ref([])
 const selectedModel = ref(null)
+const imageFileList = ref([])
 
 const form = ref({
   modelId: '',
   prompt: '',
-  image: null
+  images: [],
+  modelConfig: {
+    supportImageInput: true
+  }
 })
 
 const canGenerate = computed(() => {
   return form.value.modelId && form.value.prompt.trim() && !loading.value
 })
+
+// 参考文件列表
+const referenceFiles = computed(() => {
+  const files = []
+  
+  // 图片文件
+  imageFileList.value.forEach((file, index) => {
+    files.push({
+      type: 'image',
+      icon: '🖼️',
+      name: file.name || `图片${index + 1}`,
+      index: index,
+      category: 'images'
+    })
+  })
+  
+  return files
+})
+
+const hasReferenceFiles = computed(() => {
+  return referenceFiles.value.length > 0
+})
+
+// 插入引用到提示词
+const insertReference = (ref) => {
+  const textarea = document.querySelector('textarea')
+  if (!textarea) return
+  
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = form.value.prompt
+  
+  // 生成引用标记
+  let refText = ''
+  if (ref.type === 'image') {
+    refText = `[参考图片${ref.index + 1}]`
+  }
+  
+  // 在光标位置插入引用
+  const newText = text.substring(0, start) + ' ' + refText + ' ' + text.substring(end)
+  form.value.prompt = newText
+  
+  // 将光标移动到引用后面
+  setTimeout(() => {
+    textarea.focus()
+    const newPos = start + refText.length + 2
+    textarea.setSelectionRange(newPos, newPos)
+  }, 0)
+  
+  ElMessage.success(`已插入引用: ${refText}`)
+}
+
+// 移除参考文件
+const removeReference = (ref) => {
+  if (ref.category === 'images') {
+    // 移除图片
+    imageFileList.value.splice(ref.index, 1)
+    form.value.images.splice(ref.index, 1)
+  }
+  ElMessage.success(`已移除: ${ref.name}`)
+}
 
 const loadImageModels = async () => {
   try {
@@ -177,27 +261,72 @@ const loadImageModels = async () => {
 
 const onModelChange = () => {
   selectedModel.value = imageModels.value.find(m => m.id === form.value.modelId)
-  form.value.image = null
-  previewImage.value = null
-  imageFile.value = null
+  // 设置模型配置，控制上传组件显示
+  if (selectedModel.value) {
+    form.value.modelConfig = {
+      supportImageInput: selectedModel.value.supportImageInput !== false  // 默认 true
+    }
+  } else {
+    form.value.modelConfig = {
+      supportImageInput: true
+    }
+  }
+  // 清空所有文件
+  clearAllFiles()
 }
 
-const handleFileChange = (file) => {
-  imageFile.value = file.raw
-  previewImage.value = URL.createObjectURL(file.raw)
+// Element Plus 图片预览
+const handlePictureCardPreview = (file) => {
+  // 使用 Element Plus 的内置图片预览
+  const img = new Image()
+  img.src = file.url
+  img.onload = () => {
+    const previewImg = new Image()
+    previewImg.src = img.src
+    previewImg.style.maxWidth = '80vw'
+    previewImg.style.maxHeight = '80vh'
+    const previewContainer = document.createElement('div')
+    previewContainer.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:9999;cursor:pointer;'
+    previewContainer.appendChild(previewImg)
+    previewContainer.onclick = () => document.body.removeChild(previewContainer)
+    document.body.appendChild(previewContainer)
+  }
+}
+
+const handleImageChange = (file, fileList) => {
+  // Element Plus 需要立即设置 file.url 才能显示预览
+  // 先用 ObjectURL 作为临时预览
+  const tempUrl = URL.createObjectURL(file.raw)
+  file.url = tempUrl
   
-  // 将图片转为Base64
+  // 异步转换 Base64
   const reader = new FileReader()
   reader.onload = (e) => {
-    form.value.image = e.target.result
+    const base64 = e.target.result
+    // 更新 file.url 为 Base64
+    file.url = base64
+    // 存入表单数据
+    form.value.images.push(base64)
+    console.log(`图片已转换: ${file.name}`, base64.substring(0, 50) + '...')
+  }
+  reader.onerror = () => {
+    ElMessage.error(`图片转换失败: ${file.name}`)
   }
   reader.readAsDataURL(file.raw)
 }
 
-const clearImage = () => {
-  form.value.image = null
-  previewImage.value = null
-  imageFile.value = null
+const handleImageRemove = (file, fileList) => {
+  // 使用 file.url 来匹配（因为 file.uid 可能不一致）
+  const index = form.value.images.findIndex(base64 => base64 === file.url)
+  if (index !== -1) {
+    form.value.images.splice(index, 1)
+    console.log('移除图片，索引:', index)
+  }
+}
+
+const clearAllFiles = () => {
+  imageFileList.value = []
+  form.value.images = []
 }
 
 const generateImage = async () => {
@@ -210,7 +339,7 @@ const generateImage = async () => {
     const result = await imageApi.generate({
       model: form.value.modelId,
       prompt: form.value.prompt.trim(),
-      image: form.value.image
+      images: form.value.images.length > 0 ? form.value.images : undefined
     })
 
     generatedImage.value = result.imageUrl
@@ -235,16 +364,21 @@ const generateImage = async () => {
 }
 
 const resetForm = () => {
+  // 保留 modelConfig，避免上传区域消失
+  const currentModelConfig = form.value.modelConfig || {
+    supportImageInput: true
+  }
+  
   form.value = {
     modelId: form.value.modelId,
     prompt: '',
-    image: null
+    images: [],
+    modelConfig: currentModelConfig
   }
   generatedImage.value = null
   usageInfo.value = {}
   generationTime.value = 0
-  previewImage.value = null
-  imageFile.value = null
+  clearAllFiles()
 }
 
 const downloadImage = () => {
@@ -293,28 +427,59 @@ watch(() => route.query.model, (newModelId) => {
   align-items: center;
 }
 
+.prompt-tip {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #909399;
+}
+
+/* 参考文件引用栏 */
+.reference-files-bar {
+  margin-top: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+  border-radius: 8px;
+  border: 1px solid #dcdfe6;
+}
+
+.reference-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.reference-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.reference-tag {
+  cursor: pointer;
+  transition: all 0.3s;
+  user-select: none;
+}
+
+.reference-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.reference-tag:active {
+  transform: translateY(0);
+}
+
+.reference-hint {
+  font-size: 12px;
+  color: #909399;
+  font-style: italic;
+}
+
 .upload-demo {
   margin-bottom: 10px;
-}
-
-.preview-container {
-  position: relative;
-  margin-top: 10px;
-  display: inline-block;
-}
-
-.preview-image {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 8px;
-  border: 2px solid #e6e6e6;
-}
-
-.clear-btn {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  padding: 2px 8px;
 }
 
 .image-result {

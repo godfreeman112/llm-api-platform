@@ -27,6 +27,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/video-generate',
+    name: 'VideoGenerate',
+    component: () => import('../views/VideoGenerate.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/models',
     name: 'Models',
     component: () => import('../views/Models.vue'),

@@ -26,7 +26,8 @@
             >
               <el-icon>
                 <ChatDotRound v-if="model.modelType === 'chat'" />
-                <Picture v-else />
+                <Picture v-else-if="model.modelType === 'image'" />
+                <VideoCamera v-else />
               </el-icon>
               <span>{{ model.description || model.name }}</span>
             </el-menu-item>
@@ -197,13 +198,20 @@ const loadModels = async () => {
 
 const selectModel = (model) => {
   // 根据模型类型跳转到不同页面
-  const path = model.modelType === 'image' ? '/image-generate' : '/chat'
+  let path = '/chat'
+  if (model.modelType === 'image') {
+    path = '/image-generate'
+  } else if (model.modelType === 'video') {
+    path = '/video-generate'
+  }
   router.push({ path, query: { model: model.id } })
 }
 
 const getModelRoute = (model) => {
   // 返回模型对应的路由路径，用于菜单高亮
-  return model.modelType === 'image' ? '/image-generate' : '/chat'
+  if (model.modelType === 'image') return '/image-generate'
+  if (model.modelType === 'video') return '/video-generate'
+  return '/chat'
 }
 
 const handleLogout = () => {

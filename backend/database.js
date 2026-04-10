@@ -82,7 +82,7 @@ async function initDatabase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             provider TEXT NOT NULL,
-            model_type TEXT DEFAULT 'chat' CHECK(model_type IN ('chat', 'image')),
+            model_type TEXT DEFAULT 'chat' CHECK(model_type IN ('chat', 'image', 'video')),
             api_endpoint TEXT NOT NULL,
             api_key TEXT NOT NULL,
             temperature REAL DEFAULT 0.7,
@@ -90,6 +90,8 @@ async function initDatabase() {
             image_size TEXT DEFAULT '1024x1024',
             output_format TEXT DEFAULT 'png',
             response_format TEXT DEFAULT 'url',
+            video_duration TEXT DEFAULT '5s',
+            video_resolution TEXT DEFAULT '1080p',
             description TEXT,
             status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -147,6 +149,14 @@ async function initDatabase() {
         
         try {
           await run(`ALTER TABLE models ADD COLUMN response_format TEXT DEFAULT 'url'`);
+        } catch (e) { /* 字段已存在，忽略 */ }
+        
+        try {
+          await run(`ALTER TABLE models ADD COLUMN video_duration TEXT DEFAULT '5s'`);
+        } catch (e) { /* 字段已存在，忽略 */ }
+        
+        try {
+          await run(`ALTER TABLE models ADD COLUMN video_resolution TEXT DEFAULT '1080p'`);
         } catch (e) { /* 字段已存在，忽略 */ }
 
         // 创建索引
