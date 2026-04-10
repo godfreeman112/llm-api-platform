@@ -133,10 +133,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Picture } from '@element-plus/icons-vue'
 import { modelApi, imageApi } from '../api'
+
+const route = useRoute()
 
 const loading = ref(false)
 const generatedImage = ref(null)
@@ -257,6 +260,17 @@ const downloadImage = () => {
 
 onMounted(() => {
   loadImageModels()
+})
+
+// 监听路由参数，自动选择模型
+watch(() => route.query.model, (newModelId) => {
+  if (newModelId && imageModels.value.length > 0) {
+    const model = imageModels.value.find(m => m.id === parseInt(newModelId))
+    if (model) {
+      form.value.modelId = model.id
+      onModelChange()
+    }
+  }
 })
 </script>
 

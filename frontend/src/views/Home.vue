@@ -11,16 +11,29 @@
             <el-icon><HomeFilled /></el-icon>
             <span>首页</span>
           </el-menu-item>
-          <el-menu-item index="/chat">
-            <el-icon><ChatDotRound /></el-icon>
-            <span>对话测试</span>
-          </el-menu-item>
-          <el-menu-item index="/image-generate">
-            <el-icon><Picture /></el-icon>
-            <span>图像生成</span>
-          </el-menu-item>
+          
+          <!-- 动态模型菜单 -->
+          <el-sub-menu v-if="models.length > 0" index="models">
+            <template #title>
+              <el-icon><Cpu /></el-icon>
+              <span>大模型</span>
+            </template>
+            <el-menu-item 
+              v-for="model in models" 
+              :key="model.id"
+              :index="getModelRoute(model)"
+              @click="selectModel(model)"
+            >
+              <el-icon>
+                <ChatDotRound v-if="model.modelType === 'chat'" />
+                <Picture v-else />
+              </el-icon>
+              <span>{{ model.name }}</span>
+            </el-menu-item>
+          </el-sub-menu>
+          
           <el-menu-item v-if="authStore.isAdmin" index="/models">
-            <el-icon><Cpu /></el-icon>
+            <el-icon><Setting /></el-icon>
             <span>模型管理</span>
           </el-menu-item>
           <el-menu-item v-if="authStore.isAdmin" index="/users">
@@ -186,7 +199,14 @@ const loadModels = async () => {
 }
 
 const selectModel = (model) => {
-  router.push({ path: '/chat', query: { model: model.id } })
+  // 根据模型类型跳转到不同页面
+  const path = model.modelType === 'image' ? '/image-generate' : '/chat'
+  router.push({ path, query: { model: model.id } })
+}
+
+const getModelRoute = (model) => {
+  // 返回模型对应的路由路径，用于菜单高亮
+  return model.modelType === 'image' ? '/image-generate' : '/chat'
 }
 
 const handleLogout = () => {
