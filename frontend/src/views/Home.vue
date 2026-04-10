@@ -6,7 +6,7 @@
         <div class="logo">
           <h3>API平台</h3>
         </div>
-        <el-menu :default-active="activeMenu" router>
+        <el-menu :default-active="activeMenu" :default-openeds="['models']" router>
           <el-menu-item index="/">
             <el-icon><HomeFilled /></el-icon>
             <span>首页</span>
@@ -28,7 +28,7 @@
                 <ChatDotRound v-if="model.modelType === 'chat'" />
                 <Picture v-else />
               </el-icon>
-              <span>{{ model.name }}</span>
+              <span>{{ model.description || model.name }}</span>
             </el-menu-item>
           </el-sub-menu>
           
@@ -255,6 +255,32 @@ onMounted(() => {
 
 :deep(.el-menu-item:hover),
 :deep(.el-menu-item.is-active) {
+  background-color: #263445 !important;
+  color: #409eff !important;
+}
+
+/* 大模型子菜单样式优化 */
+:deep(.el-sub-menu__title) {
+  color: #fff !important;
+  background-color: #1f2d3d !important;
+}
+
+:deep(.el-sub-menu__title:hover) {
+  background-color: #263445 !important;
+}
+
+:deep(.el-menu--inline .el-menu-item) {
+  background-color: #1f2d3d !important;
+  color: #e0e0e0 !important;
+  padding-left: 50px !important;
+}
+
+:deep(.el-menu--inline .el-menu-item:hover) {
+  background-color: #263445 !important;
+  color: #409eff !important;
+}
+
+:deep(.el-menu--inline .el-menu-item.is-active) {
   background-color: #263445 !important;
   color: #409eff !important;
 }
