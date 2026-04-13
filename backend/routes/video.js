@@ -115,7 +115,11 @@ router.post('/submit-task', authenticateToken, async (req, res) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${model.api_key}`
         },
-        timeout: 30000
+        timeout: 60000, // 增加超时时间到60秒
+        maxRedirects: 5,
+        validateStatus: function (status) {
+          return status < 500;
+        }
       }
     );
 
@@ -148,9 +152,29 @@ router.post('/submit-task', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('提交视频任务错误:', error.response?.data || error.message);
+    
+    // 区分不同类型的错误
+    let errorMessage = '提交视频生成任务失败';
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    if (error.code === 'ECONNRESET' || error.message.includes('socket disconnected')) {
+      errorMessage = '网络连接中断，请检查网络连接或稍后重试';
+      errorCode = 'NETWORK_ERROR';
+    } else if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+      errorMessage = '请求超时，请稍后重试';
+      errorCode = 'TIMEOUT_ERROR';
+    } else if (error.response) {
+      errorMessage = error.response.data?.error?.message || `API返回错误: ${error.response.status}`;
+      errorCode = 'API_ERROR';
+    } else if (error.request) {
+      errorMessage = '无法连接到API服务器，请检查网络';
+      errorCode = 'CONNECTION_ERROR';
+    }
+    
     res.status(500).json({ 
-      message: '提交视频生成任务失败',
-      error: error.response?.data?.error?.message || error.message
+      message: errorMessage,
+      error: error.response?.data?.error?.message || error.message,
+      code: errorCode
     });
   }
 });
@@ -195,7 +219,12 @@ router.get('/task-status/:taskId', authenticateToken, async (req, res) => {
         headers: {
           'Authorization': `Bearer ${log.api_key}`
         },
-        timeout: 30000 // 增加超时时间到30秒
+        timeout: 60000, // 增加超时时间到60秒
+        // 添加重试配置
+        maxRedirects: 5,
+        validateStatus: function (status) {
+          return status < 500; // 只拒绝5xx服务器错误
+        }
       }
     );
 
@@ -323,9 +352,29 @@ router.get('/task-status/:taskId', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('查询任务状态错误:', error.response?.data || error.message);
+    
+    // 区分不同类型的错误
+    let errorMessage = '查询任务状态失败';
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    if (error.code === 'ECONNRESET' || error.message.includes('socket disconnected')) {
+      errorMessage = '网络连接中断，请检查网络连接或稍后重试';
+      errorCode = 'NETWORK_ERROR';
+    } else if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+      errorMessage = '请求超时，请稍后重试';
+      errorCode = 'TIMEOUT_ERROR';
+    } else if (error.response) {
+      errorMessage = error.response.data?.error?.message || `API返回错误: ${error.response.status}`;
+      errorCode = 'API_ERROR';
+    } else if (error.request) {
+      errorMessage = '无法连接到API服务器，请检查网络';
+      errorCode = 'CONNECTION_ERROR';
+    }
+    
     res.status(500).json({ 
-      message: '查询任务状态失败',
-      error: error.response?.data?.error?.message || error.message
+      message: errorMessage,
+      error: error.response?.data?.error?.message || error.message,
+      code: errorCode
     });
   }
 });

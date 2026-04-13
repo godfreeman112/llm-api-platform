@@ -276,12 +276,53 @@ onMounted(() => {
 
 <style scoped>
 .models-container {
-  padding: 20px;
+  padding: 30px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  min-height: 100vh;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.card-header span {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f1f5f9;
+  letter-spacing: 0.5px;
+}
+
+:deep(.el-dialog) {
+  background: rgba(30, 41, 59, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 20px !important;
+}
+
+:deep(.el-dialog__header) {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  padding: 20px 24px;
+}
+
+:deep(.el-dialog__title) {
+  color: #f1f5f9 !important;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+:deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+:deep(.el-form-item__label) {
+  color: #cbd5e1 !important;
+  font-weight: 500;
+}
+
+:deep(.el-radio__label),
+:deep(.el-checkbox__label) {
+  color: #e2e8f0 !important;
 }
 </style>

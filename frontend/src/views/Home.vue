@@ -228,74 +228,142 @@ onMounted(() => {
 <style scoped>
 .home-container {
   height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  position: relative;
+}
+
+/* 背景装饰 */
+.home-container::before {
+  content: '';
+  position: absolute;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.08) 0%, transparent 70%);
+  top: -300px;
+  right: -300px;
+  pointer-events: none;
 }
 
 .el-aside {
-  background-color: #304156;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(20px);
   color: #fff;
+  border-right: 1px solid rgba(148, 163, 184, 0.1);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .logo {
-  height: 60px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #2b3a4c;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.logo::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .logo h3 {
   margin: 0;
   color: #fff;
-  font-size: 18px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
 }
 
 .el-menu {
   border-right: none;
-  background-color: #304156;
+  background: transparent !important;
+  padding: 10px 0;
 }
 
 :deep(.el-menu-item) {
-  color: #bfcbd9;
+  color: #94a3b8;
+  margin: 4px 12px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
 }
 
-:deep(.el-menu-item:hover),
+:deep(.el-menu-item:hover) {
+  background: rgba(102, 126, 234, 0.15) !important;
+  color: #667eea !important;
+  transform: translateX(4px);
+}
+
 :deep(.el-menu-item.is-active) {
-  background-color: #263445 !important;
-  color: #409eff !important;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%) !important;
+  color: #667eea !important;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
 }
 
 /* 大模型子菜单样式优化 */
 :deep(.el-sub-menu__title) {
-  color: #fff !important;
-  background-color: #1f2d3d !important;
+  color: #f1f5f9 !important;
+  background: rgba(102, 126, 234, 0.1) !important;
+  margin: 4px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 :deep(.el-sub-menu__title:hover) {
-  background-color: #263445 !important;
+  background: rgba(102, 126, 234, 0.2) !important;
+  transform: translateX(4px);
 }
 
 :deep(.el-menu--inline .el-menu-item) {
-  background-color: #1f2d3d !important;
-  color: #e0e0e0 !important;
+  background: transparent !important;
+  color: #cbd5e1 !important;
   padding-left: 50px !important;
+  font-size: 13px;
+  margin: 2px 12px;
+  border-radius: 10px;
 }
 
 :deep(.el-menu--inline .el-menu-item:hover) {
-  background-color: #263445 !important;
-  color: #409eff !important;
+  background: rgba(102, 126, 234, 0.15) !important;
+  color: #667eea !important;
 }
 
 :deep(.el-menu--inline .el-menu-item.is-active) {
-  background-color: #263445 !important;
-  color: #409eff !important;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%) !important;
+  color: #667eea !important;
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.15);
 }
 
 .el-header {
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
+  background: rgba(30, 41, 59, 0.6) !important;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 30px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -307,18 +375,37 @@ onMounted(() => {
 
 .header-content h2 {
   margin: 0;
-  font-size: 18px;
-  color: #303133;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f1f5f9;
+  letter-spacing: 0.5px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+}
+
+.user-info span {
+  color: #cbd5e1;
+  font-weight: 500;
 }
 
 .stat-card {
   margin-bottom: 20px;
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stat-content {
@@ -330,11 +417,18 @@ onMounted(() => {
 .stat-icon {
   width: 60px;
   height: 60px;
-  border-radius: 8px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 }
 
 .stat-info {
@@ -342,20 +436,52 @@ onMounted(() => {
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #303133;
+  font-size: 28px;
+  font-weight: 700;
+  color: #f1f5f9;
+  letter-spacing: -0.5px;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #909399;
+  font-size: 13px;
+  color: #94a3b8;
   margin-top: 5px;
+  font-weight: 500;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+:deep(.el-steps) {
+  padding: 20px 0;
+}
+
+:deep(.el-step__title) {
+  color: #f1f5f9 !important;
+  font-weight: 600;
+}
+
+:deep(.el-step__description) {
+  color: #94a3b8 !important;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: rgba(148, 163, 184, 0.1);
+  --el-table-header-bg-color: rgba(15, 23, 42, 0.6);
+  --el-table-tr-hover-bg-color: rgba(102, 126, 234, 0.1);
+}
+
+:deep(.el-table th) {
+  color: #cbd5e1 !important;
+  font-weight: 600;
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+:deep(.el-table td) {
+  color: #e2e8f0 !important;
+  background: rgba(15, 23, 42, 0.4) !important;
 }
 </style>

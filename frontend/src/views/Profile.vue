@@ -240,7 +240,9 @@ onMounted(() => {
 
 <style scoped>
 .profile-container {
-  padding: 20px;
+  padding: 30px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  min-height: 100vh;
 }
 
 .profile-info {
@@ -248,10 +250,10 @@ onMounted(() => {
 }
 
 .avatar-section {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .api-key-display {
-  margin-top: 10px;
+  margin-top: 15px;
 }
 </style>

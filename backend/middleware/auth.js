@@ -1,7 +1,14 @@
 const jwt = require('jsonwebtoken');
 const { get } = require('../database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// JWT密钥必须从环境变量获取，不允许硬编码
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('❌ 错误: JWT_SECRET 环境变量未设置！');
+  console.error('请在 .env 文件中配置 JWT_SECRET');
+  process.exit(1);
+}
 
 // 验证JWT token
 async function authenticateToken(req, res, next) {
