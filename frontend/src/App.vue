@@ -12,7 +12,8 @@ const locale = ref(zhCn)
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Google Fonts 使用 protocol-relative URL 或回退到系统字体 */
+@import url('//fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 * {
   margin: 0;

@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
+// const helmet = require('helmet'); // 临时禁用，避免 HTTPS 重定向问题
 const compression = require('compression');
 const path = require('path');
 require('dotenv').config();
@@ -18,7 +18,10 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // 中间件
-app.use(helmet());
+// app.use(helmet({ // 已禁用，避免内网HTTP访问时的HTTPS重定向问题
+//   hsts: false,
+//   contentSecurityPolicy: false
+// }));
 app.use(cors());
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
